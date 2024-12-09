@@ -1,0 +1,80 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local HttpService = game:GetService("HttpService")
+local Player = game.Players.LocalPlayer
+
+local request = syn and syn.request or http_request or request
+if not request then return end
+
+_G.WebhookURL = ""
+
+local function sendWebhookNotification(content)
+    if not _G.WebhookURL or _G.WebhookURL == "" then return end
+
+    local data = {
+        ["content"] = content
+    }
+
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+
+    local body = HttpService:JSONEncode(data)
+
+    pcall(function()
+        request({
+            Url = _G.WebhookURL,
+            Method = "POST",
+            Headers = headers,
+            Body = body
+        })
+    end)
+end
+
+local function monitorInventoryBackpackAccessories()
+    local function monitorLocation(location, locationName)
+        if location then
+            location.ChildAdded:Connect(function(child)
+                sendWebhookNotification(Player.Name .. " has obtained a new item in " .. locationName .. ": " .. child.Name)
+            end)
+        end
+    end
+
+    monitorLocation(Player:FindFirstChild("Inventory"), "Inventory")
+    monitorLocation(Player:FindFirstChild("Backpack"), "Backpack")
+    monitorLocation(Player:FindFirstChild("Accessories"), "Accessories")
+end
+
+local Window = Rayfield:CreateWindow({
+    Name = "KL Webhook",
+    LoadingTitle = "DG3 KL Webhook",
+    LoadingSubtitle = "by DG3",
+    Theme = "Default",
+    KeySystem = true,
+    KeySettings = {
+        Title = "DG3 | Key",
+        Subtitle = "dm dg3baby for key",
+        Note = "dm @dg3baby",
+        FileName = "Key",
+        SaveKey = true,
+        GrabKeyFromSite = true,
+        Key = {"https://pastebin.com/raw/qyTbBAwj"}
+    }
+})
+
+local MainTab = Window:CreateTab("🤖 Webhook", nil)
+local MainSection = MainTab:CreateSection("Webhook Configuration")
+
+local Input = MainTab:CreateInput({
+    Name = "Enter Webhook URL",
+    PlaceholderText = "Paste your Webhook URL here",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        if Text and Text ~= "" then
+            _G.WebhookURL = Text
+            sendWebhookNotification("Executed (credits dg3)")
+            sendWebhookNotification("Monitoring inventory for any drops...")
+            monitorInventoryBackpackAccessories()
+        end
+    end,
+})
